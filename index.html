@@ -1,253 +1,294 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <title>График дежурств</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            color: #e0e0e0;
-            padding: 20px;
-        }
-        h1, h3 {
-            color: #66fcf1;
-        }
-        button {
-            background-color: #45a29e;
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        button:hover {
-            background-color: #66fcf1;
-            color: #0f2027;
-        }
-        input, select {
-            padding: 6px;
-            margin: 5px;
-            border-radius: 4px;
-            border: none;
-            outline: none;
-        }
-        ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        li {
-            padding: 4px 0;
-        }
-        #dutyResult, #currentDuty {
-            font-weight: 700;
-            color: #45a29e;
-        }
-        #dutyArchiveList {
-            max-height: 200px;
-            overflow-y: auto;
-            background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>График дежурств — Хай-Тек</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Orbitron', monospace, sans-serif;
+      background: linear-gradient(135deg, #0a0f1a, #1b2331);
+      color: #00fff7;
+      user-select: none;
+    }
+    h1, h3 {
+      color: #00fff7;
+      text-shadow: 0 0 6px #00fff7, 0 0 10px #00d1c1;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin-bottom: 20px;
+      max-height: 160px;
+      overflow-y: auto;
+      border: 1px solid #00fff7;
+      border-radius: 8px;
+      background: rgba(0, 255, 247, 0.05);
+      box-shadow: 0 0 12px #00fff7 inset;
+    }
+    li {
+      padding: 6px 12px;
+      border-bottom: 1px solid rgba(0, 255, 247, 0.2);
+      transition: background 0.3s;
+      cursor: default;
+    }
+    li:hover {
+      background: rgba(0, 255, 247, 0.2);
+      box-shadow: 0 0 8px #00fff7;
+    }
+    button {
+      background: #00fff7;
+      border: none;
+      color: #0a0f1a;
+      font-weight: 700;
+      padding: 10px 18px;
+      margin: 6px 8px 6px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 12px #00fff7;
+      transition: background 0.3s, color 0.3s;
+      font-family: 'Orbitron', monospace, sans-serif;
+    }
+    button:hover {
+      background: #00d1c1;
+      color: #001214;
+      box-shadow: 0 0 20px #00d1c1;
+    }
+    input[type="text"], input[type="date"], select {
+      padding: 10px;
+      margin: 6px 8px 6px 0;
+      border-radius: 6px;
+      border: 1px solid #00fff7;
+      background: transparent;
+      color: #00fff7;
+      font-family: 'Orbitron', monospace, sans-serif;
+      box-shadow: 0 0 10px #00fff7 inset;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus, input[type="date"]:focus, select:focus {
+      outline: none;
+      border-color: #00d1c1;
+      box-shadow: 0 0 16px #00d1c1 inset;
+    }
+    #currentDuty, #dutyResult {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: #00fff7;
+      text-shadow: 0 0 8px #00fff7;
+      margin-top: 10px;
+      margin-bottom: 16px;
+    }
+    #dutyArchiveList {
+      max-height: 220px;
+      overflow-y: auto;
+      background: rgba(0, 255, 247, 0.05);
+      border-radius: 8px;
+      box-shadow: 0 0 12px #00fff7 inset;
+      padding: 12px;
+      font-size: 0.95em;
+    }
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #00fff7;
+      border-radius: 5px;
+      box-shadow: 0 0 8px #00fff7;
+    }
+    ::-webkit-scrollbar-track {
+      background: #00111a;
+    }
+  </style>
 </head>
 <body>
-    <h1>График дежурств</h1>
+  <h1>График дежурств — Хай-Тек</h1>
 
-    <ul id="employeeList"></ul>
+  <ul id="employeeList"></ul>
 
-    <h3>Поменять сотрудников местами:</h3>
-    <select id="firstSelect"></select>
-    <select id="secondSelect"></select>
-    <button onclick="swapEmployees()">Поменять</button>
+  <h3>Поменять сотрудников местами:</h3>
+  <select id="firstSelect"></select>
+  <select id="secondSelect"></select>
+  <button onclick="swapEmployees()">Поменять</button>
 
-    <p>Дежурный на ближайшую субботу: <strong id="currentDuty"></strong></p>
+  <p>Дежурный на ближайшую субботу: <span id="currentDuty"></span></p>
 
-    <button onclick="resetList()">Сбросить список</button>
+  <button onclick="resetList()">Сбросить список</button>
 
-    <input type="text" id="newEmployee" placeholder="Имя нового сотрудника" />
-    <button onclick="addEmployee()">Добавить</button>
+  <input type="text" id="newEmployee" placeholder="Имя нового сотрудника" />
+  <button onclick="addEmployee()">Добавить</button>
 
-    <br/>
+  <br />
 
-    <input type="date" id="dutyDate" />
-    <button onclick="showDuty()">Кто дежурит?</button>
-    <p id="dutyResult"></p>
+  <input type="date" id="dutyDate" />
+  <button onclick="showDuty()">Кто дежурит?</button>
+  <p id="dutyResult"></p>
 
-    <h3>Архив дежурств (нельзя удалять):</h3>
-    <ul id="dutyArchiveList"></ul>
+  <h3>Архив дежурств (нельзя удалять):</h3>
+  <ul id="dutyArchiveList"></ul>
 
-    <button onclick="exportArchive()">Экспорт архива в CSV</button>
+  <button onclick="exportArchive()">Экспорт архива в CSV</button>
 
 <script>
 let employees = ['Ҷаҳонгири Ш', 'Раҳимов С', 'Абдураҳмонов З', 'Руслан К', 'Дустов М', 'Давлатов А', 'Алимов Ю'];
-
-// Загрузка архива из localStorage
 let dutyArchive = JSON.parse(localStorage.getItem('dutyArchive') || '[]');
 
 function saveArchive() {
-    localStorage.setItem('dutyArchive', JSON.stringify(dutyArchive));
+  localStorage.setItem('dutyArchive', JSON.stringify(dutyArchive));
 }
 
 function addDutyToArchive(date, employee) {
-    const dateStr = date.toISOString().slice(0, 10);
-    const existing = dutyArchive.find(entry => entry.date === dateStr && entry.employee === employee);
-    if (!existing) {
-        dutyArchive.push({ date: dateStr, employee });
-        saveArchive();
-        renderArchive();
-    }
+  const dateStr = date.toISOString().slice(0, 10);
+  const existing = dutyArchive.find(entry => entry.date === dateStr && entry.employee === employee);
+  if (!existing) {
+    dutyArchive.push({ date: dateStr, employee });
+    saveArchive();
+    renderArchive();
+  }
 }
 
 function renderArchive() {
-    const archiveList = document.getElementById('dutyArchiveList');
-    archiveList.innerHTML = '';
-    dutyArchive.slice().reverse().forEach(entry => {
-        const li = document.createElement('li');
-        li.textContent = `${entry.date}: ${entry.employee}`;
-        archiveList.appendChild(li);
-    });
+  const archiveList = document.getElementById('dutyArchiveList');
+  archiveList.innerHTML = '';
+  dutyArchive.slice().reverse().forEach(entry => {
+    const li = document.createElement('li');
+    li.textContent = `${entry.date}: ${entry.employee}`;
+    archiveList.appendChild(li);
+  });
 }
 
 function updateUI() {
-    const employeeList = document.getElementById('employeeList');
-    const firstSelect = document.getElementById('firstSelect');
-    const secondSelect = document.getElementById('secondSelect');
+  const employeeList = document.getElementById('employeeList');
+  const firstSelect = document.getElementById('firstSelect');
+  const secondSelect = document.getElementById('secondSelect');
 
-    employeeList.innerHTML = '';
-    firstSelect.innerHTML = '';
-    secondSelect.innerHTML = '';
+  employeeList.innerHTML = '';
+  firstSelect.innerHTML = '';
+  secondSelect.innerHTML = '';
 
-    employees.forEach((emp, index) => {
-        const li = document.createElement('li');
-        li.textContent = emp;
-        employeeList.appendChild(li);
+  employees.forEach((emp, index) => {
+    const li = document.createElement('li');
+    li.textContent = emp;
+    employeeList.appendChild(li);
 
-        const option1 = document.createElement('option');
-        option1.value = index;
-        option1.textContent = emp;
-        firstSelect.appendChild(option1);
+    const option1 = document.createElement('option');
+    option1.value = index;
+    option1.textContent = emp;
+    firstSelect.appendChild(option1);
 
-        const option2 = document.createElement('option');
-        option2.value = index;
-        option2.textContent = emp;
-        secondSelect.appendChild(option2);
-    });
+    const option2 = document.createElement('option');
+    option2.value = index;
+    option2.textContent = emp;
+    secondSelect.appendChild(option2);
+  });
 
-    showCurrentDuty();
+  showCurrentDuty();
 }
 
 function getNextSaturday(date = new Date()) {
-    const day = date.getDay();
-    const diff = (6 - day + 7) % 7;
-    const nextSat = new Date(date);
-    nextSat.setDate(date.getDate() + diff);
-    return nextSat;
+  const day = date.getDay();
+  const diff = (6 - day + 7) % 7;
+  const nextSat = new Date(date);
+  nextSat.setDate(date.getDate() + diff);
+  return nextSat;
 }
 
 function showCurrentDuty() {
-    const currentDutyElem = document.getElementById('currentDuty');
-    const nextSat = getNextSaturday();
-    const startDate = new Date(2025, 0, 4);
-    const diffWeeks = Math.floor((nextSat - startDate) / (7 * 24 * 60 * 60 * 1000));
-    const index = diffWeeks % employees.length;
-    const currentEmployee = employees[index];
-    currentDutyElem.textContent = currentEmployee;
+  const currentDutyElem = document.getElementById('currentDuty');
+  const nextSat = getNextSaturday();
+  const startDate = new Date(2025, 0, 4);
+  const diffWeeks = Math.floor((nextSat - startDate) / (7 * 24 * 60 * 60 * 1000));
+  const index = diffWeeks % employees.length;
+  const currentEmployee = employees[index];
+  currentDutyElem.textContent = currentEmployee;
 
-    const today = new Date();
-    if (nextSat <= today) {
-        addDutyToArchive(nextSat, currentEmployee);
-    }
+  const today = new Date();
+  if (nextSat <= today) {
+    addDutyToArchive(nextSat, currentEmployee);
+  }
 }
 
 function swapEmployees() {
-    const firstIndex = parseInt(document.getElementById('firstSelect').value);
-    const secondIndex = parseInt(document.getElementById('secondSelect').value);
-    if (firstIndex === secondIndex) {
-        alert("Выберите разных сотрудников!");
-        return;
-    }
-    [employees[firstIndex], employees[secondIndex]] = [employees[secondIndex], employees[firstIndex]];
-    updateUI();
+  const firstIndex = parseInt(document.getElementById('firstSelect').value);
+  const secondIndex = parseInt(document.getElementById('secondSelect').value);
+  if (firstIndex === secondIndex) {
+    alert("Выберите разных сотрудников!");
+    return;
+  }
+  [employees[firstIndex], employees[secondIndex]] = [employees[secondIndex], employees[firstIndex]];
+  updateUI();
 }
 
 function addEmployee() {
-    const newEmp = document.getElementById('newEmployee').value.trim();
-    if (newEmp === '') {
-        alert("Введите имя сотрудника");
-        return;
-    }
-    employees.push(newEmp);
-    document.getElementById('newEmployee').value = '';
-    updateUI();
+  const newEmp = document.getElementById('newEmployee').value.trim();
+  if (newEmp === '') {
+    alert("Введите имя сотрудника");
+    return;
+  }
+  employees.push(newEmp);
+  document.getElementById('newEmployee').value = '';
+  updateUI();
 }
 
 function resetList() {
-    employees = ['Ҷаҳонгири Ш', 'Раҳимов С', 'Абдураҳмонов З', 'Руслан К', 'Дустов М', 'Давлатов А', 'Алимов Ю'];
-    updateUI();
+  employees = ['Ҷаҳонгири Ш', 'Раҳимов С', 'Абдураҳмонов З', 'Руслан К', 'Дустов М', 'Давлатов А', 'Алимов Ю'];
+  updateUI();
 }
 
 function showDuty() {
-    let dateInput = document.getElementById('dutyDate').value;
-    let date;
-    if (dateInput) {
-        date = new Date(dateInput);
-    } else {
-        date = getNextSaturday();
-    }
-    const startDate = new Date(2025, 0, 4);
-    const weeksPassed = Math.floor((date - startDate) / (7 * 24 * 60 * 60 * 1000));
-    const index = weeksPassed % employees.length;
-    const dutyEmployee = employees[index];
-    document.getElementById('dutyResult').innerText = `Дежурный на ${date.toLocaleDateString()}: ${dutyEmployee}`;
+  let dateInput = document.getElementById('dutyDate').value;
+  let date;
+  if (dateInput) {
+    date = new Date(dateInput);
+  } else {
+    date = getNextSaturday();
+  }
+  const startDate = new Date(2025, 0, 4);
+  const weeksPassed = Math.floor((date - startDate) / (7 * 24 * 60 * 60 * 1000));
+  const index = weeksPassed % employees.length;
+  const dutyEmployee = employees[index];
+  document.getElementById('dutyResult').innerText = `Дежурный на ${date.toLocaleDateString()}: ${dutyEmployee}`;
 }
 
-// Новая функция — заполнить архив дежурств с начала 2025 по сегодня
 function fillArchiveForPastSaturdays() {
-    const startDate = new Date(2025, 0, 4);
-    const today = new Date();
-    let date = new Date(startDate);
+  const startDate = new Date(2025, 0, 4);
+  const today = new Date();
+  let date = new Date(startDate);
 
-    while (date <= today) {
-        const diffWeeks = Math.floor((date - startDate) / (7 * 24 * 60 * 60 * 1000));
-        const index = diffWeeks % employees.length;
-        const employee = employees[index];
-        addDutyToArchive(date, employee);
-        date.setDate(date.getDate() + 7);
-    }
+  while (date <= today) {
+    const diffWeeks = Math.floor((date - startDate) / (7 * 24 * 60 * 60 * 1000));
+    const index = diffWeeks % employees.length;
+    const employee = employees[index];
+    addDutyToArchive(date, employee);
+    date.setDate(date.getDate() + 7);
+  }
 }
 
-// Экспорт архива в CSV файл
 function exportArchive() {
-    if (dutyArchive.length === 0) {
-        alert("Архив пуст.");
-        return;
-    }
+  if (dutyArchive.length === 0) {
+    alert("Архив пуст.");
+    return;
+  }
 
-    const header = "Дата,Сотрудник\n";
-    const rows = dutyArchive.map(entry => `${entry.date},${entry.employee}`).join("\n");
-    const csvContent = '\uFEFF' + header + rows;
+  const header = "Дата,Сотрудник\n";
+  const rows = dutyArchive.map(entry => `${entry.date},${entry.employee}`).join("\n");
+  const csvContent = '\uFEFF' + header + rows;
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = "архив_дежурств.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = "архив_дежурств.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
-// Инициализация
 fillArchiveForPastSaturdays();
 renderArchive();
 updateUI();
-
 </script>
 </body>
 </html>
