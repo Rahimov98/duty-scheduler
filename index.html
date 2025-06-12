@@ -1,286 +1,253 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
     <meta charset="UTF-8" />
     <title>График дежурств</title>
-    <link rel="stylesheet" href="style.css">
     <style>
         body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    background: #121212;
-    color: #e0e0e0;
-}
-
-h1 {
-    text-align: center;
-    color: #00ffff;
-    text-shadow: 0 0 8px #00ffff;
-    margin-bottom: 30px;
-}
-
-ul {
-    background: #1e1e1e;
-    padding: 15px 20px;
-    border-radius: 12px;
-    box-shadow: 0 0 20px #00ffff88;
-    list-style: none;
-    margin-bottom: 30px;
-}
-
-ul li {
-    padding: 10px 15px;
-    border-bottom: 1px solid #333;
-    transition: background 0.3s;
-    cursor: default;
-}
-
-ul li:hover {
-    background: #00ffff22;
-}
-
-ul li:last-child {
-    border-bottom: none;
-}
-
-select, input[type="text"], input[type="date"], button {
-    margin: 8px 5px 15px 0;
-    padding: 10px 14px;
-    font-size: 15px;
-    border-radius: 8px;
-    border: none;
-    outline: none;
-    background: #222;
-    color: #0ff;
-    box-shadow: 0 0 10px #00ffff44;
-    transition: background 0.3s, box-shadow 0.3s;
-}
-
-select:hover, input[type="text"]:hover, input[type="date"]:hover,
-select:focus, input[type="text"]:focus, input[type="date"]:focus {
-    background: #333;
-    box-shadow: 0 0 15px #00ffffaa;
-    color: #00ffff;
-}
-
-button {
-    cursor: pointer;
-    background: linear-gradient(135deg, #00ffff, #0077ff);
-    color: #121212;
-    font-weight: 600;
-    box-shadow: 0 0 12px #00ffffcc;
-    transition: background 0.4s, box-shadow 0.4s;
-}
-
-button:hover {
-    background: linear-gradient(135deg, #0077ff, #00ffff);
-    box-shadow: 0 0 20px #00ffffee;
-    color: white;
-}
-
-.swap-controls {
-    margin-bottom: 30px;
-}
-
-#dutyResult {
-    margin-top: 10px;
-    font-weight: 700;
-    color: #00ffff;
-    text-shadow: 0 0 6px #00ffffcc;
-}
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        h1, h3 {
+            color: #66fcf1;
+        }
+        button {
+            background-color: #45a29e;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #66fcf1;
+            color: #0f2027;
+        }
+        input, select {
+            padding: 6px;
+            margin: 5px;
+            border-radius: 4px;
+            border: none;
+            outline: none;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            padding: 4px 0;
+        }
+        #dutyResult, #currentDuty {
+            font-weight: 700;
+            color: #45a29e;
+        }
+        #dutyArchiveList {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
     </style>
 </head>
-
 <body>
-    <div class="container">
     <h1>График дежурств</h1>
-    <h2>Текущий дежурный: <span id="currentDuty" class="highlight"></span></h2>
 
-    <h3>Список сотрудников</h3>
     <ul id="employeeList"></ul>
 
-    <input type="text" id="newEmployee" placeholder="Новый сотрудник">
-    <button onclick="addEmployee()">Добавить</button>
-    <button onclick="resetList()">Сброс списка</button>
-
-    <h3>Обмен дежурными</h3>
+    <h3>Поменять сотрудников местами:</h3>
     <select id="firstSelect"></select>
     <select id="secondSelect"></select>
-    <button onclick="swapEmployees()">Поменять местами</button>
+    <button onclick="swapEmployees()">Поменять</button>
 
-    <h3>Кто дежурил в конкретный день</h3>
-    <input type="date" id="dutyDate">
-    <button onclick="showDuty()">Показать</button>
+    <p>Дежурный на ближайшую субботу: <strong id="currentDuty"></strong></p>
+
+    <button onclick="resetList()">Сбросить список</button>
+
+    <input type="text" id="newEmployee" placeholder="Имя нового сотрудника" />
+    <button onclick="addEmployee()">Добавить</button>
+
+    <br/>
+
+    <input type="date" id="dutyDate" />
+    <button onclick="showDuty()">Кто дежурит?</button>
     <p id="dutyResult"></p>
 
-    <h3>Архив дежурств</h3>
-    <button onclick="exportArchive()">Экспорт архива в CSV</button>
+    <h3>Архив дежурств (нельзя удалять):</h3>
     <ul id="dutyArchiveList"></ul>
-  </div>
-</body>
+
+    <button onclick="exportArchive()">Экспорт архива в CSV</button>
+
 <script>
-    let employees = ['Ҷаҳонгири Ш', 'Раҳимов С', 'Абдураҳмонов З', 'Руслан К', 'Дустов М', 'Давлатов А', 'Алимов Ю'];
+let employees = ['Ҷаҳонгири Ш', 'Раҳимов С', 'Абдураҳмонов З', 'Руслан К', 'Дустов М', 'Давлатов А', 'Алимов Ю'];
+
+// Загрузка архива из localStorage
 let dutyArchive = JSON.parse(localStorage.getItem('dutyArchive') || '[]');
 
-function getNextSaturday(date = new Date()) {
-  const day = date.getDay();
-  const diff = (6 - day + 7) % 7;
-  const nextSat = new Date(date);
-  nextSat.setDate(date.getDate() + diff);
-  return nextSat;
-}
-
-function updateUI() {
-  const employeeList = document.getElementById('employeeList');
-  const firstSelect = document.getElementById('firstSelect');
-  const secondSelect = document.getElementById('secondSelect');
-
-  employeeList.innerHTML = '';
-  firstSelect.innerHTML = '';
-  secondSelect.innerHTML = '';
-
-  employees.forEach((emp, index) => {
-    const li = document.createElement('li');
-    li.textContent = emp;
-    employeeList.appendChild(li);
-
-    const opt1 = new Option(emp, index);
-    const opt2 = new Option(emp, index);
-    firstSelect.appendChild(opt1);
-    secondSelect.appendChild(opt2);
-  });
-
-  showCurrentDuty();
-}
-
-function showCurrentDuty() {
-  const currentDutyElem = document.getElementById('currentDuty');
-  const nextSat = getNextSaturday();
-  const startDate = new Date(2025, 0, 4);
-  const diffWeeks = Math.floor((nextSat - startDate) / (7 * 24 * 60 * 60 * 1000));
-  const index = diffWeeks % employees.length;
-  const emp = employees[index];
-  currentDutyElem.textContent = emp;
-
-  const today = new Date();
-  if (nextSat <= today) addDutyToArchive(nextSat, emp);
+function saveArchive() {
+    localStorage.setItem('dutyArchive', JSON.stringify(dutyArchive));
 }
 
 function addDutyToArchive(date, employee) {
-  const dateStr = date.toISOString().slice(0, 10);
-  const exists = dutyArchive.some(e => e.date === dateStr && e.employee === employee);
-  if (!exists) {
-    dutyArchive.push({ date: dateStr, employee });
-    saveArchive();
-    renderArchive();
-    exportJSON(true); // автосохранение
-  }
+    const dateStr = date.toISOString().slice(0, 10);
+    const existing = dutyArchive.find(entry => entry.date === dateStr && entry.employee === employee);
+    if (!existing) {
+        dutyArchive.push({ date: dateStr, employee });
+        saveArchive();
+        renderArchive();
+    }
 }
 
 function renderArchive() {
-  const list = document.getElementById('dutyArchiveList');
-  list.innerHTML = '';
-  dutyArchive.slice().reverse().forEach(entry => {
-    const li = document.createElement('li');
-    li.textContent = `${entry.date}: ${entry.employee}`;
-    list.appendChild(li);
-  });
+    const archiveList = document.getElementById('dutyArchiveList');
+    archiveList.innerHTML = '';
+    dutyArchive.slice().reverse().forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = `${entry.date}: ${entry.employee}`;
+        archiveList.appendChild(li);
+    });
 }
 
-function saveArchive() {
-  localStorage.setItem('dutyArchive', JSON.stringify(dutyArchive));
+function updateUI() {
+    const employeeList = document.getElementById('employeeList');
+    const firstSelect = document.getElementById('firstSelect');
+    const secondSelect = document.getElementById('secondSelect');
+
+    employeeList.innerHTML = '';
+    firstSelect.innerHTML = '';
+    secondSelect.innerHTML = '';
+
+    employees.forEach((emp, index) => {
+        const li = document.createElement('li');
+        li.textContent = emp;
+        employeeList.appendChild(li);
+
+        const option1 = document.createElement('option');
+        option1.value = index;
+        option1.textContent = emp;
+        firstSelect.appendChild(option1);
+
+        const option2 = document.createElement('option');
+        option2.value = index;
+        option2.textContent = emp;
+        secondSelect.appendChild(option2);
+    });
+
+    showCurrentDuty();
 }
 
-function showDuty() {
-  let input = document.getElementById('dutyDate').value;
-  let date = input ? new Date(input) : getNextSaturday();
-  const startDate = new Date(2025, 0, 4);
-  const weeksPassed = Math.floor((date - startDate) / (7 * 24 * 60 * 60 * 1000));
-  const index = weeksPassed % employees.length;
-  const emp = employees[index];
-  document.getElementById('dutyResult').innerText = `Дежурный на ${date.toLocaleDateString()}: ${emp}`;
+function getNextSaturday(date = new Date()) {
+    const day = date.getDay();
+    const diff = (6 - day + 7) % 7;
+    const nextSat = new Date(date);
+    nextSat.setDate(date.getDate() + diff);
+    return nextSat;
+}
 
-  const today = new Date();
-  if (date <= today) addDutyToArchive(date, emp);
+function showCurrentDuty() {
+    const currentDutyElem = document.getElementById('currentDuty');
+    const nextSat = getNextSaturday();
+    const startDate = new Date(2025, 0, 4);
+    const diffWeeks = Math.floor((nextSat - startDate) / (7 * 24 * 60 * 60 * 1000));
+    const index = diffWeeks % employees.length;
+    const currentEmployee = employees[index];
+    currentDutyElem.textContent = currentEmployee;
+
+    const today = new Date();
+    if (nextSat <= today) {
+        addDutyToArchive(nextSat, currentEmployee);
+    }
 }
 
 function swapEmployees() {
-  const i = +document.getElementById('firstSelect').value;
-  const j = +document.getElementById('secondSelect').value;
-  if (i === j) return alert("Выберите разных сотрудников!");
-  [employees[i], employees[j]] = [employees[j], employees[i]];
-  updateUI();
+    const firstIndex = parseInt(document.getElementById('firstSelect').value);
+    const secondIndex = parseInt(document.getElementById('secondSelect').value);
+    if (firstIndex === secondIndex) {
+        alert("Выберите разных сотрудников!");
+        return;
+    }
+    [employees[firstIndex], employees[secondIndex]] = [employees[secondIndex], employees[firstIndex]];
+    updateUI();
 }
 
 function addEmployee() {
-  const input = document.getElementById('newEmployee');
-  const val = input.value.trim();
-  if (!val) return alert("Введите имя");
-  employees.push(val);
-  input.value = '';
-  updateUI();
+    const newEmp = document.getElementById('newEmployee').value.trim();
+    if (newEmp === '') {
+        alert("Введите имя сотрудника");
+        return;
+    }
+    employees.push(newEmp);
+    document.getElementById('newEmployee').value = '';
+    updateUI();
 }
 
 function resetList() {
-  employees = ['Ҷаҳонгири Ш', 'Раҳимов С', 'Абдураҳмонов З', 'Руслан К', 'Дустов М', 'Давлатов А', 'Алимов Ю'];
-  updateUI();
+    employees = ['Ҷаҳонгири Ш', 'Раҳимов С', 'Абдураҳмонов З', 'Руслан К', 'Дустов М', 'Давлатов А', 'Алимов Ю'];
+    updateUI();
 }
 
-function exportArchive() {
-  if (!dutyArchive.length) return alert("Архив пуст");
-  const header = "Дата,Сотрудник\n";
-  const rows = dutyArchive.map(e => `${e.date},${e.employee}`).join("\n");
-  const content = '\uFEFF' + header + rows;
-  downloadFile(content, 'архив.csv', 'text/csv;charset=utf-8;');
-}
-
-function exportJSON(silent = false) {
-  const content = JSON.stringify(dutyArchive, null, 2);
-  downloadFile(content, 'архив.json', 'application/json');
-  if (!silent) alert("Архив экспортирован в архив.json");
-}
-
-function downloadFile(content, name, type) {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function importArchive() {
-  document.getElementById('importFile').click();
-}
-
-function handleImport(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!Array.isArray(data)) throw new Error("Неверный формат");
-      dutyArchive = data;
-      saveArchive();
-      renderArchive();
-      alert("Архив успешно импортирован.");
-    } catch (err) {
-      alert("Ошибка при импорте архива: " + err.message);
+function showDuty() {
+    let dateInput = document.getElementById('dutyDate').value;
+    let date;
+    if (dateInput) {
+        date = new Date(dateInput);
+    } else {
+        date = getNextSaturday();
     }
-  };
-  reader.readAsText(file);
+    const startDate = new Date(2025, 0, 4);
+    const weeksPassed = Math.floor((date - startDate) / (7 * 24 * 60 * 60 * 1000));
+    const index = weeksPassed % employees.length;
+    const dutyEmployee = employees[index];
+    document.getElementById('dutyResult').innerText = `Дежурный на ${date.toLocaleDateString()}: ${dutyEmployee}`;
+}
+
+// Новая функция — заполнить архив дежурств с начала 2025 по сегодня
+function fillArchiveForPastSaturdays() {
+    const startDate = new Date(2025, 0, 4);
+    const today = new Date();
+    let date = new Date(startDate);
+
+    while (date <= today) {
+        const diffWeeks = Math.floor((date - startDate) / (7 * 24 * 60 * 60 * 1000));
+        const index = diffWeeks % employees.length;
+        const employee = employees[index];
+        addDutyToArchive(date, employee);
+        date.setDate(date.getDate() + 7);
+    }
+}
+
+// Экспорт архива в CSV файл
+function exportArchive() {
+    if (dutyArchive.length === 0) {
+        alert("Архив пуст.");
+        return;
+    }
+
+    const header = "Дата,Сотрудник\n";
+    const rows = dutyArchive.map(entry => `${entry.date},${entry.employee}`).join("\n");
+    const csvContent = '\uFEFF' + header + rows;
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = "архив_дежурств.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // Инициализация
+fillArchiveForPastSaturdays();
 renderArchive();
 updateUI();
-</script>
 
+</script>
+</body>
 </html>
