@@ -16,7 +16,7 @@
             padding: 0;
             font-family: "Poiret One", sans-serif;
             font-weight: 700;
-            font-style:inherit;
+            font-style: inherit;
             background: linear-gradient(135deg, #0f111a, #1c1e29);
             color: #00f7ff;
         }
@@ -111,17 +111,14 @@
 
         <div class="section grid">
             <div>
-                <label>Добавить сотрудника:</label>
-                <input type="text" id="newEmployee" placeholder="ФИО сотрудника" />
-                <button onclick="addEmployee()">Добавить</button>
-                <button onclick="resetList()">Сбросить список</button>
-            </div>
-            <div>
                 <label>Список сотрудников:</label>
                 <ul id="employeeList"></ul>
             </div>
         </div>
-
+        <!-- <div class="container">
+            <h3>График дежурств по субботам на год</h3>
+            <div id="dutyScheduleList"></div>
+        </div> -->
         <hr />
 
         <div class="section grid">
@@ -154,32 +151,46 @@
         let dutyArchive = JSON.parse(localStorage.getItem('dutyArchive') || '[]');
 
         function updateUI() {
-            const employeeList = document.getElementById('employeeList');
-            const firstSelect = document.getElementById('firstSelect');
-            const secondSelect = document.getElementById('secondSelect');
+    const employeeList = document.getElementById('employeeList');
+    const firstSelect = document.getElementById('firstSelect');
+    const secondSelect = document.getElementById('secondSelect');
 
-            employeeList.innerHTML = '';
-            firstSelect.innerHTML = '';
-            secondSelect.innerHTML = '';
+    employeeList.innerHTML = '';
+    firstSelect.innerHTML = '';
+    secondSelect.innerHTML = '';
 
-            employees.forEach((emp, index) => {
-                const li = document.createElement('li');
-                li.textContent = emp;
-                employeeList.appendChild(li);
+    const startDate = getNextSaturday(new Date());
+    const dutySchedule = employees.map(() => []);
 
-                const option1 = document.createElement('option');
-                option1.value = index;
-                option1.textContent = emp;
-                firstSelect.appendChild(option1);
-
-                const option2 = document.createElement('option');
-                option2.value = index;
-                option2.textContent = emp;
-                secondSelect.appendChild(option2);
-            });
-
-            showCurrentDuty();
+    // Составим расписание на 52 субботы
+    for (let i = 0; i < 52; i++) {
+        const dutyDate = new Date(startDate);
+        dutyDate.setDate(startDate.getDate() + i * 7);
+        const empIndex = i % employees.length;
+        if (dutySchedule[empIndex].length < 3) {
+            dutySchedule[empIndex].push(dutyDate.toISOString().slice(0, 10));
         }
+    }
+
+    employees.forEach((emp, index) => {
+        const li = document.createElement('li');
+        const dates = dutySchedule[index];
+        li.textContent = `${emp}: ${dates.join(', ')}`;
+        employeeList.appendChild(li);
+
+        const option1 = document.createElement('option');
+        option1.value = index;
+        option1.textContent = emp;
+        firstSelect.appendChild(option1);
+
+        const option2 = document.createElement('option');
+        option2.value = index;
+        option2.textContent = emp;
+        secondSelect.appendChild(option2);
+    });
+
+    showCurrentDuty();
+}
 
         function getNextSaturday(date = new Date()) {
             const day = date.getDay();
@@ -287,9 +298,39 @@
             };
             reader.readAsText(file);
         }
+        function generateSaturdayDutySchedulePerEmployee() {
+            const dutyScheduleElem = document.getElementById("dutyScheduleList");
+            dutyScheduleElem.innerHTML = ''; // очищаем
+
+            const startDate = getNextSaturday(new Date()); // ближайшая суббота
+            const numWeeks = 52;
+
+            const employeeDuties = employees.map((name) => ({
+                name,
+                dates: []
+            }));
+
+            for (let week = 0; week < numWeeks; week++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + week * 7);
+
+                const employeeIndex = week % employees.length;
+                employeeDuties[employeeIndex].dates.push(date.toISOString().slice(0, 10));
+            }
+
+            employeeDuties.forEach(emp => {
+                const empDiv = document.createElement("div");
+                empDiv.style.marginBottom = "15px";
+                empDiv.innerHTML = `<strong>${emp.name}</strong><ul style="margin: 5px 0 0 15px;">` +
+                    emp.dates.map(date => `<li>${date}</li>`).join("") +
+                    `</ul>`;
+                dutyScheduleElem.appendChild(empDiv);
+            });
+        }
 
         renderArchive();
         updateUI();
+        generateSaturdayDutySchedulePerEmployee();  
     </script>
 </body>
 
