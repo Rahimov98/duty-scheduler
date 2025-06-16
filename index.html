@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Дежурства | Hi-Tech</title>
 
-    <!-- Используем аналог DynaGroteskLM Bold через Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poiret+One&display=swap" rel="stylesheet">
@@ -20,7 +19,6 @@
             background: linear-gradient(135deg, #0f111a, #1c1e29);
             color: #00f7ff;
         }
-
 
         .container {
             max-width: 960px;
@@ -47,10 +45,11 @@
             color: #00f7ff;
             padding: 10px;
             margin: 5px 0;
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Poiret One', sans-serif; /* Исправлено на Poiret One */
             border-radius: 6px;
             transition: all 0.3s ease;
             width: 100%;
+            box-sizing: border-box;
         }
 
         button:hover {
@@ -68,7 +67,45 @@
             border-left: 4px solid #00f7ff;
             margin-bottom: 5px;
             padding: 6px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            word-break: break-word;
         }
+
+        li span {
+            flex-grow: 1;
+        }
+
+        li button {
+            width: auto;
+            margin-left: 10px;
+            padding: 5px 10px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+
+        li .edit-telegram-id-btn {
+            background-color: #333;
+        }
+
+        li .edit-telegram-id-btn:hover {
+            background-color: #555;
+        }
+
+        li .vacation-btn {
+            background-color: #f77f00; /* Оранжевый для отпуска */
+        }
+        li .vacation-btn.on-vacation {
+            background-color: #4CAF50; /* Зеленый, если в отпуске */
+        }
+        li .vacation-btn:hover {
+            background-color: #ff9933;
+        }
+        li .vacation-btn.on-vacation:hover {
+            background-color: #66BB6A;
+        }
+
 
         .section {
             margin-top: 25px;
@@ -82,7 +119,7 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 15px;
         }
 
@@ -94,6 +131,25 @@
         hr {
             border-color: #00f7ff44;
             margin: 20px 0;
+        }
+
+        .telegram-input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .telegram-input-group input {
+            flex-grow: 1;
+            width: auto;
+            margin: 0;
+        }
+
+        .telegram-input-group button {
+            width: auto;
+            margin: 0;
+            padding: 10px 15px;
         }
     </style>
 </head>
@@ -112,13 +168,16 @@
         <div class="section grid">
             <div>
                 <label>Список сотрудников:</label>
+                <input type="text" id="newEmployeeName" placeholder="Имя нового сотрудника" />
+                <div class="telegram-input-group">
+                    <input type="text" id="newEmployeeTelegramId" placeholder="Telegram ID (необязательно)" />
+                    <button onclick="addEmployee()">Добавить</button>
+                </div>
+                <button onclick="resetList()">Сбросить список</button>
                 <ul id="employeeList"></ul>
             </div>
         </div>
-        <!-- <div class="container">
-            <h3>График дежурств по субботам на год</h3>
-            <div id="dutyScheduleList"></div>
-        </div> -->
+
         <hr />
 
         <div class="section grid">
@@ -139,6 +198,20 @@
         <hr />
 
         <div class="section">
+            <h2>Ручное назначение дежурного</h2>
+            <label>Дата дежурства (суббота):</label>
+            <input type="date" id="manualDutyDate" />
+            <label>Назначить сотрудника:</label>
+            <select id="manualEmployeeSelect"></select>
+            <button onclick="addManualAssignment()">Назначить вручную</button>
+
+            <h3>Существующие ручные назначения:</h3>
+            <ul id="manualAssignmentsList"></ul>
+        </div>
+
+        <hr />
+
+        <div class="section">
             <h2>Архив дежурств</h2>
             <ul id="dutyArchiveList"></ul>
             <button onclick="exportArchive()">Экспорт архива</button>
@@ -147,112 +220,279 @@
     </div>
 
     <script>
-        let employees = ['JAHONGIRI SH', 'RAHIMOV S', 'ABDURAHMONOV Z', 'RUSLAN K', 'DUSTOV M', 'DAVLATOV A', 'ALIMOV Y'];
+        // Данные теперь будут храниться в localStorage
+        let employees = JSON.parse(localStorage.getItem('employees')) || [
+            { name: 'JAHONGIRI SH', telegramId: '', onVacation: false },
+            { name: 'RAHIMOV S', telegramId: '', onVacation: false },
+            { name: 'ABDURAHMONOV Z', telegramId: '', onVacation: false },
+            { name: 'RUSLAN K', telegramId: '', onVacation: false },
+            { name: 'DUSTOV M', telegramId: '', onVacation: false },
+            { name: 'DAVLATOV A', telegramId: '', onVacation: false },
+            { name: 'ALIMOV Y', telegramId: '', onVacation: false }
+        ];
         let dutyArchive = JSON.parse(localStorage.getItem('dutyArchive') || '[]');
+        let manualAssignments = JSON.parse(localStorage.getItem('manualAssignments') || '[]');
 
-        function updateUI() {
-    const employeeList = document.getElementById('employeeList');
-    const firstSelect = document.getElementById('firstSelect');
-    const secondSelect = document.getElementById('secondSelect');
-
-    employeeList.innerHTML = '';
-    firstSelect.innerHTML = '';
-    secondSelect.innerHTML = '';
-
-    const startDate = getNextSaturday(new Date());
-    const dutySchedule = employees.map(() => []);
-
-    // Составим расписание на 52 субботы
-    for (let i = 0; i < 52; i++) {
-        const dutyDate = new Date(startDate);
-        dutyDate.setDate(startDate.getDate() + i * 7);
-        const empIndex = i % employees.length;
-        if (dutySchedule[empIndex].length < 3) {
-            dutySchedule[empIndex].push(dutyDate.toISOString().slice(0, 10));
+        // --- Вспомогательные функции для сохранения в localStorage ---
+        function saveEmployees() {
+            localStorage.setItem('employees', JSON.stringify(employees));
         }
-    }
 
-    employees.forEach((emp, index) => {
-        const li = document.createElement('li');
-        const dates = dutySchedule[index];
-        li.textContent = `${emp}: ${dates.join(', ')}`;
-        employeeList.appendChild(li);
+        function saveDutyArchive() {
+            localStorage.setItem('dutyArchive', JSON.stringify(dutyArchive));
+        }
 
-        const option1 = document.createElement('option');
-        option1.value = index;
-        option1.textContent = emp;
-        firstSelect.appendChild(option1);
+        function saveManualAssignments() {
+            localStorage.setItem('manualAssignments', JSON.stringify(manualAssignments));
+        }
 
-        const option2 = document.createElement('option');
-        option2.value = index;
-        option2.textContent = emp;
-        secondSelect.appendChild(option2);
-    });
+        // --- Функция обновления всего UI ---
+        function updateUI() {
+            // Обновляем списки сотрудников и селекты
+            const employeeList = document.getElementById('employeeList');
+            const firstSelect = document.getElementById('firstSelect');
+            const secondSelect = document.getElementById('secondSelect');
+            const manualEmployeeSelect = document.getElementById('manualEmployeeSelect'); // Добавлено
 
-    showCurrentDuty();
-}
+            employeeList.innerHTML = '';
+            firstSelect.innerHTML = '';
+            secondSelect.innerHTML = '';
+            manualEmployeeSelect.innerHTML = ''; // Очищаем селект для ручного назначения
+
+            employees.forEach((emp, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${emp.name} (ID: ${emp.telegramId || 'нет'})</span>`;
+
+                // Кнопка для редактирования Telegram ID
+                const editIdBtn = document.createElement('button');
+                editIdBtn.textContent = 'ID';
+                editIdBtn.className = 'edit-telegram-id-btn';
+                editIdBtn.onclick = () => editTelegramId(index);
+                li.appendChild(editIdBtn);
+
+                // Кнопка Отпуск/Работа
+                const vacationBtn = document.createElement('button');
+                vacationBtn.textContent = emp.onVacation ? 'В отпуске' : 'На работе';
+                vacationBtn.className = 'vacation-btn' + (emp.onVacation ? ' on-vacation' : '');
+                vacationBtn.onclick = () => toggleVacationStatus(index);
+                li.appendChild(vacationBtn);
+
+                // Кнопка для удаления сотрудника
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Удалить';
+                deleteBtn.onclick = () => deleteEmployee(index);
+                li.appendChild(deleteBtn);
+
+                employeeList.appendChild(li);
+
+                // Заполняем селекты для обмена и ручного назначения
+                const option1 = document.createElement('option');
+                option1.value = index;
+                option1.textContent = emp.name;
+                firstSelect.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = index;
+                option2.textContent = emp.name;
+                secondSelect.appendChild(option2);
+
+                const manualOption = document.createElement('option');
+                manualOption.value = emp.name; // Для ручного назначения нам нужно имя
+                manualOption.textContent = emp.name;
+                manualEmployeeSelect.appendChild(manualOption);
+            });
+
+            showCurrentDuty();
+            renderArchive();
+            renderManualAssignments(); // Добавлено
+        }
 
         function getNextSaturday(date = new Date()) {
             const day = date.getDay();
             const diff = (6 - day + 7) % 7;
             const nextSat = new Date(date);
             nextSat.setDate(date.getDate() + diff);
+            nextSat.setHours(0, 0, 0, 0); // Обнуляем время для точного сравнения
             return nextSat;
         }
+
+        function getInitialStartDate() {
+            // Эта дата должна быть началом отсчета для циклического графика
+            const initialDate = new Date(2025, 0, 4); // 4 января 2025 года (суббота)
+            initialDate.setHours(0, 0, 0, 0);
+            return initialDate;
+        }
+
+        /**
+         * Определяет дежурного на заданную дату, учитывая ручные назначения и отпуска.
+         * @param {Date} targetDate - Дата, на которую нужно определить дежурного.
+         * @returns {Object|null} Объект сотрудника или null, если не найден.
+         */
+        function getNextDutyEmployee(targetDate) {
+            targetDate.setHours(0, 0, 0, 0); // Обнуляем время для сравнения
+
+            // 1. Проверяем ручные назначения
+            const manualAssignment = manualAssignments.find(ma =>
+                new Date(ma.date).setHours(0, 0, 0, 0) === targetDate.getTime()
+            );
+
+            if (manualAssignment) {
+                // Ищем сотрудника по имени (так как в ручном назначении хранится только имя)
+                const assignedEmployee = employees.find(emp => emp.name === manualAssignment.employeeName);
+                if (assignedEmployee) {
+                    return { ...assignedEmployee, reason: manualAssignment.reason }; // Возвращаем сотрудника и причину
+                }
+            }
+
+            // 2. Если ручного назначения нет, используем автоматический расчет
+            const availableEmployees = employees.filter(emp => !emp.onVacation);
+
+            if (availableEmployees.length === 0) {
+                return null; // Все в отпуске или нет сотрудников
+            }
+
+            const initialStartDate = getInitialStartDate();
+            const weeksPassed = Math.floor((targetDate - initialStartDate) / (7 * 24 * 60 * 60 * 1000));
+
+            // Если weeksPassed отрицателен (дата раньше initialStartDate), нормализуем индекс
+            const index = (weeksPassed % availableEmployees.length + availableEmployees.length) % availableEmployees.length;
+
+            return availableEmployees[index];
+        }
+
 
         function showCurrentDuty() {
             const currentDutyElem = document.getElementById('currentDuty');
             const nextSat = getNextSaturday();
-            const startDate = new Date(2025, 0, 4);
-            const diffWeeks = Math.floor((nextSat - startDate) / (7 * 24 * 60 * 60 * 1000));
-            const index = diffWeeks % employees.length;
-            const currentEmployee = employees[index];
-            currentDutyElem.textContent = currentEmployee;
+            const dutyEmployee = getNextDutyEmployee(nextSat);
 
-            const today = new Date();
-            if (nextSat <= today) addDutyToArchive(nextSat, currentEmployee);
+            if (dutyEmployee) {
+                let textContent = dutyEmployee.name;
+                if (dutyEmployee.reason) {
+                    textContent += ` (назначен вручную: ${dutyEmployee.reason})`;
+                } else if (employees.find(emp => emp.name === dutyEmployee.name && emp.onVacation)) {
+                    // Это условие сработает, если кто-то в отпуске, но его вручную назначили
+                    textContent += ` (дежурит, несмотря на отпуск)`; // Маловероятный сценарий с текущей логикой
+                }
+                currentDutyElem.textContent = textContent;
+                // Автоматическое добавление в архив (если дата прошла)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (nextSat.getTime() <= today.getTime()) {
+                    addDutyToArchive(nextSat, dutyEmployee.name);
+                }
+            } else {
+                currentDutyElem.textContent = 'Нет доступных дежурных или не удалось определить.';
+            }
         }
 
         function swapEmployees() {
             const firstIndex = parseInt(document.getElementById('firstSelect').value);
             const secondIndex = parseInt(document.getElementById('secondSelect').value);
-            if (firstIndex === secondIndex) return alert("Выберите разных сотрудников!");
+            if (isNaN(firstIndex) || isNaN(secondIndex) || firstIndex === secondIndex) {
+                return alert("Выберите двух разных сотрудников для обмена!");
+            }
+
+            // Меняем местами объекты сотрудников
             [employees[firstIndex], employees[secondIndex]] = [employees[secondIndex], employees[firstIndex]];
-            updateUI();
+
+            saveEmployees(); // Сохраняем изменения
+            updateUI(); // Обновляем UI
         }
 
         function addEmployee() {
-            const newEmp = document.getElementById('newEmployee').value.trim();
-            if (newEmp === '') return alert("Введите имя сотрудника");
-            employees.push(newEmp);
-            document.getElementById('newEmployee').value = '';
+            const newEmpName = document.getElementById('newEmployeeName').value.trim();
+            const newEmpTelegramId = document.getElementById('newEmployeeTelegramId').value.trim();
+
+            if (newEmpName === '') {
+                return alert("Введите имя сотрудника");
+            }
+            if (employees.some(emp => emp.name.toLowerCase() === newEmpName.toLowerCase())) {
+                return alert(`Сотрудник с именем "${newEmpName}" уже существует.`);
+            }
+
+            employees.push({ name: newEmpName, telegramId: newEmpTelegramId, onVacation: false });
+            document.getElementById('newEmployeeName').value = '';
+            document.getElementById('newEmployeeTelegramId').value = '';
+            saveEmployees();
             updateUI();
         }
 
-        function resetList() {
-            employees = ['JAHONGIRI SH', 'RAHIMOV S', 'ABDURAHMONOV Z', 'RUSLAN K', 'DUSTOV M', 'DAVLATOV A', 'ALIMOV Y'];
+        function deleteEmployee(index) {
+            if (confirm(`Вы уверены, что хотите удалить сотрудника ${employees[index].name}?`)) {
+                employees.splice(index, 1);
+                saveEmployees();
+                updateUI();
+            }
+        }
+
+        function editTelegramId(index) {
+            const currentId = employees[index].telegramId;
+            const newId = prompt(`Введите новый Telegram ID для ${employees[index].name}:`, currentId);
+            if (newId !== null) { // Если пользователь не отменил ввод
+                employees[index].telegramId = newId.trim();
+                saveEmployees();
+                updateUI();
+            }
+        }
+
+        function toggleVacationStatus(index) {
+            employees[index].onVacation = !employees[index].onVacation;
+            saveEmployees();
             updateUI();
+        }
+
+
+        function resetList() {
+            if (confirm("Вы уверены, что хотите сбросить список сотрудников к значениям по умолчанию? Все текущие данные будут утеряны.")) {
+                employees = [
+                    { name: 'JAHONGIRI SH', telegramId: '', onVacation: false },
+                    { name: 'RAHIMOV S', telegramId: '', onVacation: false },
+                    { name: 'ABDURAHMONOV Z', telegramId: '', onVacation: false },
+                    { name: 'RUSLAN K', telegramId: '', onVacation: false },
+                    { name: 'DUSTOV M', telegramId: '', onVacation: false },
+                    { name: 'DAVLATOV A', telegramId: '', onVacation: false },
+                    { name: 'ALIMOV Y', telegramId: '', onVacation: false }
+                ];
+                dutyArchive = []; // Также сбрасываем архив, если список сотрудников сброшен
+                manualAssignments = []; // Сбрасываем ручные назначения
+                saveEmployees();
+                saveDutyArchive();
+                saveManualAssignments();
+                updateUI();
+            }
         }
 
         function showDuty() {
             let dateInput = document.getElementById('dutyDate').value;
             let date = dateInput ? new Date(dateInput) : getNextSaturday();
-            const startDate = new Date(2025, 0, 4);
-            const weeksPassed = Math.floor((date - startDate) / (7 * 24 * 60 * 60 * 1000));
-            const index = weeksPassed % employees.length;
-            const dutyEmployee = employees[index];
-            document.getElementById('dutyResult').innerText = `Дежурный на ${date.toLocaleDateString()}: ${dutyEmployee}`;
+
+            // Проверяем, является ли выбранная дата субботой
+            if (date.getDay() !== 6) { // 0 = Воскресенье, 6 = Суббота
+                alert("Пожалуйста, выберите субботу.");
+                document.getElementById('dutyResult').innerText = "";
+                return;
+            }
+
+            const dutyEmployee = getNextDutyEmployee(date);
+
+            if (dutyEmployee) {
+                let textContent = dutyEmployee.name;
+                if (dutyEmployee.reason) {
+                    textContent += ` (назначен вручную: ${dutyEmployee.reason})`;
+                }
+                document.getElementById('dutyResult').innerText = `Дежурный на ${date.toLocaleDateString('ru-RU')}: ${textContent}`;
+            } else {
+                document.getElementById('dutyResult').innerText = `На ${date.toLocaleDateString('ru-RU')}: Нет доступных дежурных.`;
+            }
         }
 
-        function saveArchive() {
-            localStorage.setItem('dutyArchive', JSON.stringify(dutyArchive));
-        }
-
-        function addDutyToArchive(date, employee) {
-            const existing = dutyArchive.find(entry => entry.date === date.toISOString().slice(0, 10) && entry.employee === employee);
+        function addDutyToArchive(date, employeeName) {
+            const dateString = date.toISOString().slice(0, 10);
+            const existing = dutyArchive.find(entry => entry.date === dateString && entry.employee === employeeName);
             if (!existing) {
-                dutyArchive.push({ date: date.toISOString().slice(0, 10), employee });
-                saveArchive();
+                dutyArchive.push({ date: dateString, employee: employeeName });
+                saveDutyArchive();
                 renderArchive();
             }
         }
@@ -260,20 +500,98 @@
         function renderArchive() {
             const archiveList = document.getElementById('dutyArchiveList');
             archiveList.innerHTML = '';
-            dutyArchive.slice().reverse().forEach(entry => {
+            // Сортируем по дате для корректного отображения
+            const sortedArchive = [...dutyArchive].sort((a, b) => new Date(b.date) - new Date(a.date));
+            sortedArchive.forEach(entry => {
                 const li = document.createElement('li');
-                li.textContent = `${entry.date}: ${entry.employee}`;
+                li.textContent = `${new Date(entry.date).toLocaleDateString('ru-RU')}: ${entry.employee}`;
                 archiveList.appendChild(li);
             });
         }
 
+        // --- Функции для ручного назначения ---
+        function addManualAssignment() {
+            const manualDutyDateInput = document.getElementById('manualDutyDate').value;
+            const manualEmployeeName = document.getElementById('manualEmployeeSelect').value;
+
+            if (!manualDutyDateInput || !manualEmployeeName) {
+                return alert("Пожалуйста, выберите дату и сотрудника для ручного назначения.");
+            }
+
+            const selectedDate = new Date(manualDutyDateInput);
+            if (selectedDate.getDay() !== 6) { // Проверяем, что это суббота (0=вс, 6=сб)
+                return alert("Для ручного назначения выберите субботу.");
+            }
+            selectedDate.setHours(0, 0, 0, 0); // Обнуляем время
+
+            const dateString = selectedDate.toISOString().slice(0, 10);
+
+            // Проверяем, нет ли уже ручного назначения на эту дату
+            const existingAssignmentIndex = manualAssignments.findIndex(ma => ma.date === dateString);
+
+            if (existingAssignmentIndex !== -1) {
+                if (!confirm(`На дату ${new Date(dateString).toLocaleDateString('ru-RU')} уже назначено: ${manualAssignments[existingAssignmentIndex].employeeName}. Хотите заменить на ${manualEmployeeName}?`)) {
+                    return; // Пользователь отменил замену
+                }
+                // Заменяем существующее назначение
+                manualAssignments[existingAssignmentIndex] = { date: dateString, employeeName: manualEmployeeName, reason: "Ручная замена" };
+            } else {
+                manualAssignments.push({ date: dateString, employeeName: manualEmployeeName, reason: "Ручное назначение" });
+            }
+
+            saveManualAssignments();
+            updateUI(); // Обновляем весь UI, чтобы изменения отобразились
+        }
+
+        function deleteManualAssignment(index) {
+            if (confirm(`Вы уверены, что хотите удалить ручное назначение на ${new Date(manualAssignments[index].date).toLocaleDateString('ru-RU')} для ${manualAssignments[index].employeeName}?`)) {
+                manualAssignments.splice(index, 1);
+                saveManualAssignments();
+                updateUI();
+            }
+        }
+
+        function renderManualAssignments() {
+            const manualAssignmentsList = document.getElementById('manualAssignmentsList');
+            manualAssignmentsList.innerHTML = '';
+            // Сортируем по дате для корректного отображения
+            const sortedManual = [...manualAssignments].sort((a, b) => new Date(a.date) - new Date(b.date)); // От старых к новым
+
+            if (sortedManual.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = 'Нет ручных назначений.';
+                manualAssignmentsList.appendChild(li);
+                return;
+            }
+
+            sortedManual.forEach((assignment, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${new Date(assignment.date).toLocaleDateString('ru-RU')}: ${assignment.employeeName} (${assignment.reason || 'без причины'})</span>`;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Удалить';
+                deleteBtn.onclick = () => deleteManualAssignment(manualAssignments.indexOf(assignment)); // Используем исходный индекс
+                li.appendChild(deleteBtn);
+                manualAssignmentsList.appendChild(li);
+            });
+        }
+
+
+        // --- Функции экспорта/импорта архива (теперь включают все данные) ---
         function exportArchive() {
-            if (dutyArchive.length === 0) return alert("Архив пуст.");
-            const blob = new Blob([JSON.stringify(dutyArchive, null, 2)], { type: "application/json" });
+            const dataToExport = {
+                employees: employees,
+                dutyArchive: dutyArchive,
+                manualAssignments: manualAssignments
+            };
+
+            if (Object.keys(dataToExport).length === 0) return alert("Данные для экспорта отсутствуют.");
+
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "duty_archive.json";
+            a.download = "duty_data.json"; // Изменено имя файла
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -285,52 +603,40 @@
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (Array.isArray(data)) {
-                        dutyArchive = data;
-                        saveArchive();
-                        renderArchive();
+                    if (data && typeof data === 'object') {
+                        // Осторожно импортируем каждую часть
+                        if (Array.isArray(data.employees)) {
+                            employees = data.employees;
+                            saveEmployees();
+                        } else {
+                            console.warn("В импортированном файле отсутствуют или повреждены данные сотрудников.");
+                        }
+                        if (Array.isArray(data.dutyArchive)) {
+                            dutyArchive = data.dutyArchive;
+                            saveDutyArchive();
+                        } else {
+                            console.warn("В импортированном файле отсутствуют или повреждены данные архива дежурств.");
+                        }
+                        if (Array.isArray(data.manualAssignments)) {
+                            manualAssignments = data.manualAssignments;
+                            saveManualAssignments();
+                        } else {
+                            console.warn("В импортированном файле отсутствуют или повреждены данные ручных назначений.");
+                        }
+                        updateUI();
+                        alert("Данные успешно импортированы!");
                     } else {
-                        alert("Неверный формат файла.");
+                        alert("Неверный формат файла: ожидается объект.");
                     }
                 } catch (err) {
-                    alert("Ошибка чтения файла.");
+                    alert("Ошибка чтения или парсинга файла: " + err.message);
                 }
             };
             reader.readAsText(file);
         }
-        function generateSaturdayDutySchedulePerEmployee() {
-            const dutyScheduleElem = document.getElementById("dutyScheduleList");
-            dutyScheduleElem.innerHTML = ''; // очищаем
 
-            const startDate = getNextSaturday(new Date()); // ближайшая суббота
-            const numWeeks = 52;
-
-            const employeeDuties = employees.map((name) => ({
-                name,
-                dates: []
-            }));
-
-            for (let week = 0; week < numWeeks; week++) {
-                const date = new Date(startDate);
-                date.setDate(startDate.getDate() + week * 7);
-
-                const employeeIndex = week % employees.length;
-                employeeDuties[employeeIndex].dates.push(date.toISOString().slice(0, 10));
-            }
-
-            employeeDuties.forEach(emp => {
-                const empDiv = document.createElement("div");
-                empDiv.style.marginBottom = "15px";
-                empDiv.innerHTML = `<strong>${emp.name}</strong><ul style="margin: 5px 0 0 15px;">` +
-                    emp.dates.map(date => `<li>${date}</li>`).join("") +
-                    `</ul>`;
-                dutyScheduleElem.appendChild(empDiv);
-            });
-        }
-
-        renderArchive();
+        // Инициализация при загрузке страницы
         updateUI();
-        generateSaturdayDutySchedulePerEmployee();  
     </script>
 </body>
 
